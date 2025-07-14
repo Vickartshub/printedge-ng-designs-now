@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Upload, Palette, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
 import businessCards from "@/assets/business-cards.jpg";
 import carBranding from "@/assets/car-branding.jpg";
 import weddingInvites from "@/assets/wedding-invites.jpg";
@@ -108,14 +109,16 @@ const FeaturedServices = () => {
                 </ul>
 
                 {/* CTA Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
-                >
-                  Order Now
-                  <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                <Link to="/products">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                  >
+                    Start Order
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
               </div>
             </div>
           ))}
