@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Upload, Palette, Plus, Minus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Upload, Palette, Plus, Minus, Search, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/hooks/useCart";
+import { useToast } from "@/hooks/use-toast";
+import { FlashBanner } from "@/components/FlashBanner";
+import { CartDrawer } from "@/components/CartDrawer";
 
 interface ProductSpec {
   name: string;
@@ -14,8 +20,11 @@ interface ProductSpec {
 interface Product {
   id: string;
   name: string;
-  basePrice: number;
+  base_price: number;
   description: string;
+  image_url?: string;
+  category: string;
+  is_active: boolean;
   specifications?: ProductSpec[];
   customDimensions?: boolean;
   sizeOptions?: { size: string; price: number }[];
@@ -23,75 +32,92 @@ interface Product {
   tierOptions?: { tier: string; price: number; description: string }[];
 }
 
-const products: Product[] = [
-  {
-    id: "business-cards",
-    name: "Business Cards",
-    basePrice: 14000,
-    description: "Professional business cards that make lasting impressions. Premium quality printing with various finish options.",
-    specifications: [
-      { name: "Curved edge", price: 1000 },
-      { name: "600grams", price: 3000 },
-      { name: "Express Delivery", price: 4000 }
-    ]
-  },
-  {
-    id: "branded-tshirt",
-    name: "Branded T-shirt",
-    basePrice: 6000,
-    description: "High-quality branded t-shirts perfect for corporate events, promotions, and team uniforms.",
-    sizeOptions: [
-      { size: "L, M, S", price: 2000 },
-      { size: "XL", price: 3000 },
-      { size: "XXL", price: 5000 }
-    ]
-  },
-  {
-    id: "mugs",
-    name: "Mugs",
-    basePrice: 2000,
-    description: "Custom printed mugs perfect for corporate gifts and promotional items.",
-    specifications: [
-      { name: "Magic Mug", price: 5000 }
-    ]
-  },
-  {
-    id: "banner",
-    name: "Banner",
-    basePrice: 0,
-    description: "Custom banners for events, promotions, and advertising. Price calculated based on dimensions.",
-    customDimensions: true
-  },
-  {
-    id: "flyers-brochure",
-    name: "Flyers & Brochure",
-    basePrice: 0,
-    description: "Eye-catching marketing materials for events, promotions, and business advertising.",
-    unitOptions: [
-      { unit: "A4 Flyer", price: 150 },
-      { unit: "A5 Flyer", price: 80 },
-      { unit: "A6 Flyer", price: 50 }
-    ]
-  },
-  {
-    id: "wedding-invitations",
-    name: "Wedding Invitations",
-    basePrice: 0,
-    description: "Elegant wedding invitations with customized printing included. Perfect for your special day.",
-    tierOptions: [
-      { tier: "Luxury Card", price: 100000, description: "100pcs - Premium materials with gold foiling" },
-      { tier: "Middle Class Card", price: 60000, description: "100pcs - High-quality printing on premium paper" }
-    ]
-  }
-];
+// Specification mappings for different products
+const productSpecifications = {
+  "business-cards": [
+    { name: "Curved edge", price: 1000 },
+    { name: "600grams", price: 3000 },
+    { name: "Express Delivery", price: 4000 }
+  ],
+  "branded-tshirt": [
+    { name: "L, M, S", price: 2000 },
+    { name: "XL", price: 3000 },
+    { name: "XXL", price: 5000 }
+  ],
+  "mugs": [
+    { name: "Magic Mug", price: 5000 }
+  ]
+};
 
 const Products = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({});
   const [dimensions, setDimensions] = useState<Record<string, { width: number; height: number }>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [selectedSizes, setSelectedSizes] = useState<Record<string, string>>({});
   const [selectedUnits, setSelectedUnits] = useState<Record<string, string>>({});
   const [selectedTiers, setSelectedTiers] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    filterProducts();
+  }, [products, searchTerm, selectedCategory]);
+
+  const loadProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) {
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterProducts = () => {
+    let filtered = products;
+
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(product => product.category === selectedCategory);
+    }
+
+    setFilteredProducts(filtered);
+  };
+
+  const getCategories = () => {
+    const categories = [...new Set(products.map(p => p.category))];
+    return categories;
+  };
 
   const toggleSpec = (productId: string, specName: string) => {
     setSelectedSpecs(prev => ({
@@ -120,25 +146,20 @@ const Products = () => {
   };
 
   const calculatePrice = (product: Product) => {
-    let total = product.basePrice;
+    let total = product.base_price;
     const productId = product.id;
+    const specs = productSpecifications[productId as keyof typeof productSpecifications];
 
     // Add specification costs
-    if (product.specifications && selectedSpecs[productId]) {
+    if (specs && selectedSpecs[productId]) {
       selectedSpecs[productId].forEach(specName => {
-        const spec = product.specifications?.find(s => s.name === specName);
+        const spec = specs.find(s => s.name === specName);
         if (spec) total += spec.price;
       });
     }
 
-    // Add size costs
-    if (product.sizeOptions && selectedSizes[productId]) {
-      const size = product.sizeOptions.find(s => s.size === selectedSizes[productId]);
-      if (size) total += size.price;
-    }
-
-    // Calculate banner price
-    if (product.customDimensions && dimensions[productId]) {
+    // Calculate banner price based on dimensions
+    if (product.name === "Banner" && dimensions[productId]) {
       const { width, height } = dimensions[productId];
       if (width && height) {
         total = width * height * 300;
@@ -146,65 +167,162 @@ const Products = () => {
     }
 
     // Calculate flyer price with quantity
-    if (product.unitOptions && selectedUnits[productId] && quantities[productId]) {
-      const unit = product.unitOptions.find(u => u.unit === selectedUnits[productId]);
-      if (unit) {
-        total = unit.price * quantities[productId];
+    if (product.name === "Flyers & Brochure" && selectedUnits[productId] && quantities[productId]) {
+      const unitPrices = {
+        "A4 Flyer": 150,
+        "A5 Flyer": 80,
+        "A6 Flyer": 50
+      };
+      const unitPrice = unitPrices[selectedUnits[productId] as keyof typeof unitPrices];
+      if (unitPrice) {
+        total = unitPrice * quantities[productId];
       }
     }
 
-    // Set tier pricing
-    if (product.tierOptions && selectedTiers[productId]) {
-      const tier = product.tierOptions.find(t => t.tier === selectedTiers[productId]);
-      if (tier) total = tier.price;
+    // Set tier pricing for wedding invitations
+    if (product.name === "Wedding Invitations" && selectedTiers[productId]) {
+      const tierPrices = {
+        "Luxury Card": 100000,
+        "Middle Class Card": 60000
+      };
+      const tierPrice = tierPrices[selectedTiers[productId] as keyof typeof tierPrices];
+      if (tierPrice) total = tierPrice;
     }
 
     return total;
   };
 
+  const handleAddToCart = async (product: Product) => {
+    try {
+      const specs = selectedSpecs[product.id] || [];
+      const customDims = dimensions[product.id] || null;
+      const unitPrice = calculatePrice(product);
+      const quantity = quantities[product.id] || 1;
+
+      await addToCart({
+        product_id: product.id,
+        quantity,
+        selected_specs: specs,
+        custom_dimensions: customDims,
+        unit_price: unitPrice,
+        total_price: unitPrice * quantity,
+        product_name: product.name,
+        product_description: product.description,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Flash Banner */}
+      <FlashBanner />
+      
       {/* Header */}
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold">Our Products</h1>
-              <p className="text-muted-foreground">Choose from our wide range of printing and branding services</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Home
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold">Our Products</h1>
+                <p className="text-muted-foreground">Choose from our wide range of printing and branding services</p>
+              </div>
             </div>
+            <CartDrawer />
           </div>
         </div>
       </div>
 
+      {/* Search and Filter */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {getCategories().map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Products Grid */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-8">
-          {products.map((product) => (
-            <Card key={product.id} className="overflow-hidden">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-xl">{product.name}</CardTitle>
-                    <CardDescription className="mt-2">{product.description}</CardDescription>
+      <div className="container mx-auto px-4 pb-8">
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8">
+            {filteredProducts.map((product) => (
+              <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                {product.image_url && (
+                  <div className="aspect-video w-full overflow-hidden">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">
-                      ₦{calculatePrice(product).toLocaleString()}
-                    </p>
-                    {product.basePrice > 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        Base: ₦{product.basePrice.toLocaleString()}
+                )}
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl">{product.name}</CardTitle>
+                      <CardDescription className="mt-2">{product.description}</CardDescription>
+                      <div className="mt-2">
+                        <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                          {product.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-2xl font-bold text-primary">
+                        ₦{calculatePrice(product).toLocaleString()}
                       </p>
-                    )}
+                      {product.base_price > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Base: ₦{product.base_price.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
               <CardContent className="space-y-6">
                 {/* Design Upload/Create Buttons */}
@@ -220,12 +338,12 @@ const Products = () => {
                 </div>
 
                 {/* Specifications */}
-                {product.specifications && (
+                {productSpecifications[product.id as keyof typeof productSpecifications] && (
                   <div>
                     <Label className="text-base font-semibold">Extra Specifications</Label>
                     <div className="grid gap-2 mt-2">
-                      {product.specifications.map((spec) => (
-                        <div key={spec.name} className="flex items-center justify-between p-3 border rounded-lg">
+                      {productSpecifications[product.id as keyof typeof productSpecifications].map((spec) => (
+                        <div key={spec.name} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
@@ -242,21 +360,21 @@ const Products = () => {
                   </div>
                 )}
 
-                {/* Size Options */}
-                {product.sizeOptions && (
+                {/* Size Options for T-shirts */}
+                {product.name === "Branded T-shirt" && (
                   <div>
                     <Label className="text-base font-semibold">Size Options</Label>
                     <div className="grid gap-2 mt-2">
-                      {product.sizeOptions.map((size) => (
-                        <div key={size.size} className="flex items-center justify-between p-3 border rounded-lg">
+                      {productSpecifications["branded-tshirt"].map((size) => (
+                        <div key={size.name} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                           <div className="flex items-center gap-3">
                             <input
                               type="radio"
                               name={`size-${product.id}`}
-                              checked={selectedSizes[product.id] === size.size}
-                              onChange={() => setSelectedSizes(prev => ({ ...prev, [product.id]: size.size }))}
+                              checked={selectedSizes[product.id] === size.name}
+                              onChange={() => setSelectedSizes(prev => ({ ...prev, [product.id]: size.name }))}
                             />
-                            <span>{size.size}</span>
+                            <span>{size.name}</span>
                           </div>
                           <span className="font-semibold text-primary">+₦{size.price.toLocaleString()}</span>
                         </div>
@@ -266,7 +384,7 @@ const Products = () => {
                 )}
 
                 {/* Custom Dimensions for Banner */}
-                {product.customDimensions && (
+                {product.name === "Banner" && (
                   <div>
                     <Label className="text-base font-semibold">Dimensions (Feet)</Label>
                     <div className="grid grid-cols-2 gap-4 mt-2">
@@ -300,13 +418,17 @@ const Products = () => {
                 )}
 
                 {/* Unit Options for Flyers */}
-                {product.unitOptions && (
+                {product.name === "Flyers & Brochure" && (
                   <div className="space-y-4">
                     <div>
                       <Label className="text-base font-semibold">Size Options</Label>
                       <div className="grid gap-2 mt-2">
-                        {product.unitOptions.map((unit) => (
-                          <div key={unit.unit} className="flex items-center justify-between p-3 border rounded-lg">
+                        {[
+                          { unit: "A4 Flyer", price: 150 },
+                          { unit: "A5 Flyer", price: 80 },
+                          { unit: "A6 Flyer", price: 50 }
+                        ].map((unit) => (
+                          <div key={unit.unit} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-3">
                               <input
                                 type="radio"
@@ -355,12 +477,15 @@ const Products = () => {
                 )}
 
                 {/* Tier Options for Wedding Invitations */}
-                {product.tierOptions && (
+                {product.name === "Wedding Invitations" && (
                   <div>
                     <Label className="text-base font-semibold">Package Options</Label>
                     <div className="grid gap-2 mt-2">
-                      {product.tierOptions.map((tier) => (
-                        <div key={tier.tier} className="p-4 border rounded-lg">
+                      {[
+                        { tier: "Luxury Card", price: 100000, description: "100pcs - Premium materials with gold foiling" },
+                        { tier: "Middle Class Card", price: 60000, description: "100pcs - High-quality printing on premium paper" }
+                      ].map((tier) => (
+                        <div key={tier.tier} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
                               <input
@@ -384,13 +509,18 @@ const Products = () => {
                 )}
 
                 {/* Add to Cart Button */}
-                <Button className="w-full" size="lg">
+                <Button 
+                  className="w-full" 
+                  size="lg"
+                  onClick={() => handleAddToCart(product)}
+                >
                   Add to Cart - ₦{calculatePrice(product).toLocaleString()}
                 </Button>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
