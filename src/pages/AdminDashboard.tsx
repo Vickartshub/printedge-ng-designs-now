@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Package, 
@@ -18,7 +19,9 @@ import {
   Save,
   Plus,
   Eye,
-  Settings
+  Settings,
+  LogOut,
+  User
 } from 'lucide-react';
 
 interface Product {
@@ -65,6 +68,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingBanner, setEditingBanner] = useState<FlashBanner | null>(null);
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -251,7 +255,21 @@ const AdminDashboard = () => {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Badge variant="secondary">Admin Panel</Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>{user?.email}</span>
+          </div>
+          <Badge variant="secondary">Admin Panel</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
