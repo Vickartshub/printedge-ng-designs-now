@@ -251,6 +251,20 @@ const Products = () => {
         </div>
       </div>
 
+      {/* Dummy Banner Slot */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="h-12 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+              <span className="text-muted-foreground text-sm">Banner Slot</span>
+            </div>
+          </div>
+          <div className="w-full md:w-48">
+            {/* Spacer to align with category filter */}
+          </div>
+        </div>
+      </div>
+
       {/* Search and Filter */}
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row gap-4 mb-8">
