@@ -251,34 +251,11 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dummy Banner Slot */}
+      {/* Categories Filter at Top */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="h-12 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-              <span className="text-muted-foreground text-sm">Banner Slot</span>
-            </div>
-          </div>
-          <div className="w-full md:w-48">
-            {/* Spacer to align with category filter */}
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <div className="flex justify-start">
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-48">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
@@ -290,6 +267,32 @@ const Products = () => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Dummy Banner Slot */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="h-24 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+              <span className="text-muted-foreground text-sm">Banner Slot</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-start mb-8">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
       </div>
 
