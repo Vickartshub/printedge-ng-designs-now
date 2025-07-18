@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Upload, Palette, Plus, Minus, Search, ShoppingCart } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Upload, Palette, Plus, Minus, Search, ShoppingCart, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/hooks/useCart";
@@ -251,12 +252,28 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Categories Filter at Top */}
+      {/* Dummy Banner Slot */}
       <div className="container mx-auto px-4 py-4">
-        <div className="flex justify-start">
+        <div className="h-24 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
+          <span className="text-muted-foreground text-sm">Banner Slot</span>
+        </div>
+      </div>
+
+      {/* Search and Categories on Same Line */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select category" />
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
@@ -270,29 +287,119 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dummy Banner Slot */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="h-24 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-              <span className="text-muted-foreground text-sm">Banner Slot</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Dummy Products Grid */}
+      <div className="container mx-auto px-4 pb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[
+            {
+              id: "dummy-1",
+              name: "Business Cards",
+              description: "Professional business cards with premium finishes",
+              image: "/placeholder.svg",
+              price: 15000,
+              category: "cards"
+            },
+            {
+              id: "dummy-2", 
+              name: "Wedding Invitations",
+              description: "Elegant wedding invitation cards",
+              image: "/placeholder.svg",
+              price: 25000,
+              category: "invitations"
+            },
+            {
+              id: "dummy-3",
+              name: "Flyers & Brochures", 
+              description: "Marketing materials for your business",
+              image: "/placeholder.svg",
+              price: 5000,
+              category: "marketing"
+            }
+          ].map((product) => (
+            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                  Product Image
+                </div>
+              </div>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{product.name}</CardTitle>
+                    <CardDescription className="mt-1">{product.description}</CardDescription>
+                    <div className="mt-2">
+                      <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                        {product.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="text-xl font-bold text-primary">
+                      ₦{product.price.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
 
-      {/* Search */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-start mb-8">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+              <CardContent className="space-y-4">
+                {/* Design Upload/Create Buttons */}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Palette className="w-4 h-4 mr-2" />
+                    Create
+                  </Button>
+                </div>
+
+                {/* Specifications Dropdown */}
+                <div>
+                  <Label className="text-sm font-semibold">Add Specifications</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between mt-2">
+                        Select specifications
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-full">
+                      <DropdownMenuItem>
+                        <span>Curved edge (+₦1,000)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>300grams (+₦2,000)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>600grams (+₦3,000)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Metallic card (+₦5,000)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Paper card (+₦1,500)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Matte lamination (+₦2,500)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Glossy lamination (+₦2,500)</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Stone lamination (+₦4,000)</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Add to Cart Button */}
+                <Button className="w-full" size="sm">
+                  Add to Cart - ₦{product.price.toLocaleString()}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 
