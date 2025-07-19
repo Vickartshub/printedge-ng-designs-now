@@ -55,10 +55,24 @@ interface FlashBanner {
   is_active: boolean;
 }
 
+interface Banner {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  image_url: string;
+  link_url: string;
+  button_text: string;
+  is_active: boolean;
+  position: number;
+  image_dimensions: string;
+}
+
 const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [flashBanners, setFlashBanners] = useState<FlashBanner[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -67,7 +81,8 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [editingBanner, setEditingBanner] = useState<FlashBanner | null>(null);
+  const [editingFlashBanner, setEditingFlashBanner] = useState<FlashBanner | null>(null);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
 
@@ -93,10 +108,16 @@ const AdminDashboard = () => {
         .limit(50);
       
       // Load flash banners
-      const { data: bannersData } = await supabase
+      const { data: flashBannersData } = await supabase
         .from('flash_banners')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Load main banners
+      const { data: bannersData } = await supabase
+        .from('banners')
+        .select('*')
+        .order('position', { ascending: true });
 
       if (productsData) setProducts(productsData);
       if (ordersData) {
@@ -113,7 +134,8 @@ const AdminDashboard = () => {
           totalProducts: productsData?.length || 0,
         });
       }
-      if (bannersData) setFlashBanners(bannersData);
+      if (flashBannersData) setFlashBanners(flashBannersData);
+      if (bannersData) setBanners(bannersData);
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -231,13 +253,48 @@ const AdminDashboard = () => {
         description: "Flash banner updated successfully.",
       });
       
-      setEditingBanner(null);
+      setEditingFlashBanner(null);
       loadDashboardData();
     } catch (error) {
       console.error('Error updating flash banner:', error);
       toast({
         title: "Error",
         description: "Failed to update flash banner.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateBanner = async (banner: Banner) => {
+    try {
+      const { error } = await supabase
+        .from('banners')
+        .update({
+          title: banner.title,
+          subtitle: banner.subtitle,
+          description: banner.description,
+          image_url: banner.image_url,
+          link_url: banner.link_url,
+          button_text: banner.button_text,
+          is_active: banner.is_active,
+          position: banner.position,
+        })
+        .eq('id', banner.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Banner updated successfully.",
+      });
+      
+      setEditingBanner(null);
+      loadDashboardData();
+    } catch (error) {
+      console.error('Error updating banner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update banner.",
         variant: "destructive",
       });
     }
@@ -319,7 +376,8 @@ const AdminDashboard = () => {
         <TabsList>
           <TabsTrigger value="orders">Orders</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="banners">Flash Banners</TabsTrigger>
+          <TabsTrigger value="flash-banners">Flash Banners</TabsTrigger>
+          <TabsTrigger value="banners">Main Banners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="orders">
@@ -426,7 +484,7 @@ const AdminDashboard = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="banners">
+        <TabsContent value="flash-banners">
           <Card>
             <CardHeader>
               <CardTitle>Flash Banners</CardTitle>
@@ -445,6 +503,48 @@ const AdminDashboard = () => {
                         <p className="text-sm text-muted-foreground mb-2">{banner.description}</p>
                         <div className="flex items-center gap-4">
                           <span className="text-sm">Link: {banner.link_url}</span>
+                          <Badge variant={banner.is_active ? 'default' : 'secondary'}>
+                            {banner.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingFlashBanner(banner)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="banners">
+          <Card>
+            <CardHeader>
+              <CardTitle>Main Banners</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {banners.map((banner) => (
+                  <div 
+                    key={banner.id} 
+                    className="border rounded-lg p-4"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{banner.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-1">{banner.subtitle}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{banner.description}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
+                          <span>Dimensions: {banner.image_dimensions}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm">Position: {banner.position}</span>
                           <Badge variant={banner.is_active ? 'default' : 'secondary'}>
                             {banner.is_active ? 'Active' : 'Inactive'}
                           </Badge>
@@ -563,11 +663,99 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Banner Edit Modal */}
-      {editingBanner && (
+      {/* Flash Banner Edit Modal */}
+      {editingFlashBanner && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Edit Flash Banner</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="banner-title">Title</Label>
+                <Input
+                  id="banner-title"
+                  value={editingFlashBanner.title}
+                  onChange={(e) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    title: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="banner-description">Description</Label>
+                <Textarea
+                  id="banner-description"
+                  value={editingFlashBanner.description}
+                  onChange={(e) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    description: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="banner-link">Link URL</Label>
+                <Input
+                  id="banner-link"
+                  value={editingFlashBanner.link_url}
+                  onChange={(e) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    link_url: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="bg-color">Background Color</Label>
+                <Input
+                  id="bg-color"
+                  type="color"
+                  value={editingFlashBanner.background_color}
+                  onChange={(e) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    background_color: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="text-color">Text Color</Label>
+                <Input
+                  id="text-color"
+                  type="color"
+                  value={editingFlashBanner.text_color}
+                  onChange={(e) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    text_color: e.target.value
+                  })}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="banner-active"
+                  checked={editingFlashBanner.is_active}
+                  onCheckedChange={(checked) => setEditingFlashBanner({
+                    ...editingFlashBanner,
+                    is_active: checked
+                  })}
+                />
+                <Label htmlFor="banner-active">Active</Label>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button onClick={() => updateFlashBanner(editingFlashBanner)}>
+                <Save className="w-4 h-4 mr-2" />
+                Save
+              </Button>
+              <Button variant="outline" onClick={() => setEditingFlashBanner(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Banner Edit Modal */}
+      {editingBanner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Edit Main Banner</h3>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="banner-title">Title</Label>
@@ -577,6 +765,17 @@ const AdminDashboard = () => {
                   onChange={(e) => setEditingBanner({
                     ...editingBanner,
                     title: e.target.value
+                  })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="banner-subtitle">Subtitle</Label>
+                <Input
+                  id="banner-subtitle"
+                  value={editingBanner.subtitle}
+                  onChange={(e) => setEditingBanner({
+                    ...editingBanner,
+                    subtitle: e.target.value
                   })}
                 />
               </div>
@@ -592,6 +791,20 @@ const AdminDashboard = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="banner-image">Image URL</Label>
+                <Input
+                  id="banner-image"
+                  value={editingBanner.image_url}
+                  onChange={(e) => setEditingBanner({
+                    ...editingBanner,
+                    image_url: e.target.value
+                  })}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {editingBanner.image_dimensions}
+                </p>
+              </div>
+              <div>
                 <Label htmlFor="banner-link">Link URL</Label>
                 <Input
                   id="banner-link"
@@ -603,26 +816,25 @@ const AdminDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="bg-color">Background Color</Label>
+                <Label htmlFor="banner-button">Button Text</Label>
                 <Input
-                  id="bg-color"
-                  type="color"
-                  value={editingBanner.background_color}
+                  id="banner-button"
+                  value={editingBanner.button_text}
                   onChange={(e) => setEditingBanner({
                     ...editingBanner,
-                    background_color: e.target.value
+                    button_text: e.target.value
                   })}
                 />
               </div>
               <div>
-                <Label htmlFor="text-color">Text Color</Label>
+                <Label htmlFor="banner-position">Position</Label>
                 <Input
-                  id="text-color"
-                  type="color"
-                  value={editingBanner.text_color}
+                  id="banner-position"
+                  type="number"
+                  value={editingBanner.position}
                   onChange={(e) => setEditingBanner({
                     ...editingBanner,
-                    text_color: e.target.value
+                    position: parseInt(e.target.value) || 1
                   })}
                 />
               </div>
@@ -639,7 +851,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <Button onClick={() => updateFlashBanner(editingBanner)}>
+              <Button onClick={() => updateBanner(editingBanner)}>
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>

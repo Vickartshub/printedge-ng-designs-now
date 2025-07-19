@@ -38,6 +38,51 @@ export type Database = {
         }
         Relationships: []
       }
+      banners: {
+        Row: {
+          button_text: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_dimensions: string | null
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          position: number | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          button_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_dimensions?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position?: number | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          button_text?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_dimensions?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          position?: number | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart: {
         Row: {
           created_at: string | null
