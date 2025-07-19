@@ -12,6 +12,7 @@ import { useCart } from "@/hooks/useCart";
 import { useToast } from "@/hooks/use-toast";
 import { FlashBanner } from "@/components/FlashBanner";
 import { CartDrawer } from "@/components/CartDrawer";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProductSpec {
   name: string;
@@ -65,6 +66,7 @@ const Products = () => {
   
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     loadProducts();
@@ -247,7 +249,16 @@ const Products = () => {
                 <p className="text-muted-foreground">Choose from our wide range of printing and branding services</p>
               </div>
             </div>
-            <CartDrawer />
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="outline" size="sm">
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              )}
+              <CartDrawer />
+            </div>
           </div>
         </div>
       </div>
@@ -287,59 +298,50 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dummy Products Grid */}
+
+      {/* Products Grid */}
       <div className="container mx-auto px-4 pb-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              id: "dummy-1",
-              name: "Business Cards",
-              description: "Professional business cards with premium finishes",
-              image: "/placeholder.svg",
-              price: 15000,
-              category: "cards"
-            },
-            {
-              id: "dummy-2", 
-              name: "Wedding Invitations",
-              description: "Elegant wedding invitation cards",
-              image: "/placeholder.svg",
-              price: 25000,
-              category: "invitations"
-            },
-            {
-              id: "dummy-3",
-              name: "Flyers & Brochures", 
-              description: "Marketing materials for your business",
-              image: "/placeholder.svg",
-              price: 5000,
-              category: "marketing"
-            }
-          ].map((product) => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  Product Image
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No products found</h3>
+            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-video w-full overflow-hidden bg-muted">
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      Product Image
+                    </div>
+                  )}
                 </div>
-              </div>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <CardDescription className="mt-1">{product.description}</CardDescription>
-                    <div className="mt-2">
-                      <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                        {product.category}
-                      </span>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{product.name}</CardTitle>
+                      <CardDescription className="mt-1">{product.description}</CardDescription>
+                      <div className="mt-2">
+                        <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
+                          {product.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-xl font-bold text-primary">
+                        ₦{calculatePrice(product).toLocaleString()}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-xl font-bold text-primary">
-                      ₦{product.price.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
 
               <CardContent className="space-y-4">
                 {/* Design Upload/Create Buttons */}
@@ -355,132 +357,27 @@ const Products = () => {
                 </div>
 
                 {/* Specifications Dropdown */}
-                <div>
-                  <Label className="text-sm font-semibold">Add Specifications</Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between mt-2">
-                        Select specifications
-                        <ChevronDown className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                      <DropdownMenuItem>
-                        <span>Curved edge (+₦1,000)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>300grams (+₦2,000)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>600grams (+₦3,000)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>Metallic card (+₦5,000)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>Paper card (+₦1,500)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>Matte lamination (+₦2,500)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>Glossy lamination (+₦2,500)</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <span>Stone lamination (+₦4,000)</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Add to Cart Button */}
-                <Button className="w-full" size="sm">
-                  Add to Cart - ₦{product.price.toLocaleString()}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Products Grid */}
-      <div className="container mx-auto px-4 pb-8">
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <ShoppingCart className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No products found</h3>
-            <p className="text-muted-foreground">Try adjusting your search or filter criteria.</p>
-          </div>
-        ) : (
-          <div className="grid gap-8">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {product.image_url && (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl">{product.name}</CardTitle>
-                      <CardDescription className="mt-2">{product.description}</CardDescription>
-                      <div className="mt-2">
-                        <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs font-medium">
-                          {product.category}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right ml-4">
-                      <p className="text-2xl font-bold text-primary">
-                        ₦{calculatePrice(product).toLocaleString()}
-                      </p>
-                      {product.base_price > 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          Base: ₦{product.base_price.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-
-              <CardContent className="space-y-6">
-                {/* Design Upload/Create Buttons */}
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Design
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    <Palette className="w-4 h-4 mr-2" />
-                    Create Design
-                  </Button>
-                </div>
-
-                {/* Specifications */}
                 {productSpecifications[product.id as keyof typeof productSpecifications] && (
                   <div>
-                    <Label className="text-base font-semibold">Extra Specifications</Label>
-                    <div className="grid gap-2 mt-2">
-                      {productSpecifications[product.id as keyof typeof productSpecifications].map((spec) => (
-                        <div key={spec.name} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="checkbox"
-                              checked={selectedSpecs[product.id]?.includes(spec.name) || false}
-                              onChange={() => toggleSpec(product.id, spec.name)}
-                              className="rounded"
-                            />
-                            <span>{spec.name}</span>
-                          </div>
-                          <span className="font-semibold text-primary">+₦{spec.price.toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <Label className="text-sm font-semibold">Add Specifications</Label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-between mt-2">
+                          Select specifications
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-full">
+                        {productSpecifications[product.id as keyof typeof productSpecifications].map((spec) => (
+                          <DropdownMenuItem
+                            key={spec.name}
+                            onClick={() => toggleSpec(product.id, spec.name)}
+                          >
+                            <span>{spec.name} (+₦{spec.price.toLocaleString()})</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
 
@@ -633,11 +530,7 @@ const Products = () => {
                 )}
 
                 {/* Add to Cart Button */}
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={() => handleAddToCart(product)}
-                >
+                <Button className="w-full" size="sm" onClick={() => handleAddToCart(product)}>
                   Add to Cart - ₦{calculatePrice(product).toLocaleString()}
                 </Button>
               </CardContent>
