@@ -83,6 +83,7 @@ const AdminDashboard = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingFlashBanner, setEditingFlashBanner] = useState<FlashBanner | null>(null);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
 
@@ -262,6 +263,38 @@ const AdminDashboard = () => {
         description: "Failed to update flash banner.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploadingImage(true);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('imagedirectory')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('imagedirectory')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -791,15 +824,48 @@ const AdminDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="banner-image">Image URL</Label>
-                <Input
-                  id="banner-image"
-                  value={editingBanner.image_url}
-                  onChange={(e) => setEditingBanner({
-                    ...editingBanner,
-                    image_url: e.target.value
-                  })}
-                />
+                <Label htmlFor="banner-image">Image</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="banner-image-url"
+                    placeholder="Or paste image URL"
+                    value={editingBanner.image_url || ''}
+                    onChange={(e) => setEditingBanner({
+                      ...editingBanner,
+                      image_url: e.target.value
+                    })}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="banner-image-file"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const imageUrl = await handleImageUpload(file);
+                          if (imageUrl) {
+                            setEditingBanner({
+                              ...editingBanner,
+                              image_url: imageUrl
+                            });
+                          }
+                        }
+                      }}
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage && <span className="text-sm text-muted-foreground">Uploading...</span>}
+                  </div>
+                  {editingBanner.image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={editingBanner.image_url}
+                        alt="Banner preview"
+                        className="max-w-full h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {editingBanner.image_dimensions}
                 </p>

@@ -37,6 +37,26 @@ const EditableBanner = () => {
     };
 
     fetchBanner();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('banner-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'banners'
+        },
+        () => {
+          fetchBanner();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // If no banner data is available, show default content
