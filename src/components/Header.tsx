@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X, Phone, Mail, LogIn, LogOut, User, Shield } from "lucide-react";
-
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAdmin, signOut } = useAuth();
-
-  return (
-    <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+  const {
+    user,
+    isAdmin,
+    signOut
+  } = useAuth();
+  return <header className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -18,7 +19,7 @@ const Header = () => {
             <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">P</span>
             </div>
-            <span className="text-xl font-bold text-primary">PrintEdge.ng</span>
+            <span className="text-xl font-bold text-primary">Printa.ng</span>
           </div>
 
           {/* Desktop Navigation */}
@@ -44,16 +45,13 @@ const Header = () => {
               <span>+234 803 123 4567</span>
             </div>
             
-            {user ? (
-              <div className="flex items-center space-x-3">
-                {isAdmin && (
-                  <Link to="/admin">
+            {user ? <div className="flex items-center space-x-3">
+                {isAdmin && <Link to="/admin">
                     <Button variant="outline" size="sm">
                       <Shield className="w-4 h-4 mr-2" />
                       Admin
                     </Button>
-                  </Link>
-                )}
+                  </Link>}
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4" />
                   <span className="text-sm">{user.email}</span>
@@ -62,29 +60,22 @@ const Header = () => {
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
-              </div>
-            ) : (
-              <Link to="/auth">
+              </div> : <Link to="/auth">
                 <Button variant="hero" size="sm">
                   <LogIn className="w-4 h-4 mr-2" />
                   Login
                 </Button>
-              </Link>
-            )}
+              </Link>}
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-border">
+        {isMenuOpen && <div className="md:hidden mt-4 pb-4 border-t border-border">
             <nav className="flex flex-col space-y-4 pt-4">
               <Link to="/" className="text-foreground hover:text-primary transition-colors">
                 Home
@@ -104,39 +95,30 @@ const Header = () => {
                 <span>+234 803 123 4567</span>
               </div>
               
-              {user ? (
-                <div className="space-y-3">
+              {user ? <div className="space-y-3">
                   <div className="flex items-center space-x-2 text-sm">
                     <User className="w-4 h-4" />
                     <span>{user.email}</span>
                   </div>
-                  {isAdmin && (
-                    <Link to="/admin">
+                  {isAdmin && <Link to="/admin">
                       <Button variant="outline" size="sm" className="w-fit">
                         <Shield className="w-4 h-4 mr-2" />
                         Admin Panel
                       </Button>
-                    </Link>
-                  )}
+                    </Link>}
                   <Button variant="outline" size="sm" className="w-fit" onClick={signOut}>
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </Button>
-                </div>
-              ) : (
-                <Link to="/auth">
+                </div> : <Link to="/auth">
                   <Button variant="hero" size="sm" className="w-fit">
                     <LogIn className="w-4 h-4 mr-2" />
                     Login
                   </Button>
-                </Link>
-              )}
+                </Link>}
             </nav>
-          </div>
-        )}
+          </div>}
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
