@@ -14,6 +14,18 @@ import { FlashBanner } from "@/components/FlashBanner";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface Banner {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  image_url?: string;
+  link_url?: string;
+  button_text?: string;
+  is_active: boolean;
+  position: number;
+}
+
 interface ProductSpec {
   name: string;
   price: number;
@@ -54,6 +66,7 @@ const productSpecifications = {
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({});
@@ -70,6 +83,7 @@ const Products = () => {
 
   useEffect(() => {
     loadProducts();
+    loadBanners();
   }, []);
 
   useEffect(() => {
@@ -97,6 +111,23 @@ const Products = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBanners = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('banners')
+        .select('*')
+        .eq('is_active', true)
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+      if (data) {
+        setBanners(data);
+      }
+    } catch (error) {
+      console.error('Error loading banners:', error);
     }
   };
 
@@ -263,12 +294,61 @@ const Products = () => {
         </div>
       </div>
 
-      {/* Dummy Banner Slot */}
-      <div className="container mx-auto px-4 py-4">
-        <div className="h-24 bg-muted/20 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center">
-          <span className="text-muted-foreground text-sm">Banner Slot</span>
+      {/* Dynamic Banner Section */}
+      {banners.length > 0 && (
+        <div className="container mx-auto px-4 py-4">
+          {banners.map((banner) => (
+            <div key={banner.id} className="relative overflow-hidden rounded-lg mb-4">
+              {banner.image_url ? (
+                <div className="relative h-48 md:h-64 lg:h-80">
+                  <img
+                    src={banner.image_url}
+                    alt={banner.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="text-center text-white px-6">
+                      <h2 className="text-2xl md:text-4xl font-bold mb-2">{banner.title}</h2>
+                      {banner.subtitle && (
+                        <p className="text-lg md:text-xl mb-3 opacity-90">{banner.subtitle}</p>
+                      )}
+                      {banner.description && (
+                        <p className="text-sm md:text-base mb-4 opacity-80 max-w-2xl mx-auto">{banner.description}</p>
+                      )}
+                      {banner.link_url && (
+                        <Link to={banner.link_url}>
+                          <Button size="lg" className="bg-primary hover:bg-primary/90">
+                            {banner.button_text || 'Learn More'}
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-48 md:h-64 lg:h-80 bg-gradient-to-r from-primary/20 to-primary/40 flex items-center justify-center">
+                  <div className="text-center px-6">
+                    <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2">{banner.title}</h2>
+                    {banner.subtitle && (
+                      <p className="text-lg md:text-xl mb-3 text-muted-foreground">{banner.subtitle}</p>
+                    )}
+                    {banner.description && (
+                      <p className="text-sm md:text-base mb-4 text-muted-foreground max-w-2xl mx-auto">{banner.description}</p>
+                    )}
+                    {banner.link_url && (
+                      <Link to={banner.link_url}>
+                        <Button size="lg">
+                          {banner.button_text || 'Learn More'}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Search and Categories on Same Line */}
       <div className="container mx-auto px-4 py-6">
