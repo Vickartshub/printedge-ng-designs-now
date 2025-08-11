@@ -21,7 +21,8 @@ import {
   Eye,
   Settings,
   LogOut,
-  User
+  User,
+  Image as ImageIcon
 } from 'lucide-react';
 
 interface Product {
@@ -84,6 +85,7 @@ const AdminDashboard = () => {
   const [editingFlashBanner, setEditingFlashBanner] = useState<FlashBanner | null>(null);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingProductImage, setUploadingProductImage] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
 
@@ -490,10 +492,25 @@ const AdminDashboard = () => {
               <div className="space-y-4">
                 {products.map((product) => (
                   <div key={product.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
-                        <h4 className="font-semibold">{product.name}</h4>
-                        <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+                        <div className="flex items-start gap-4 mb-3">
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-16 h-16 object-cover rounded border"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-muted rounded border flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{product.name}</h4>
+                            <p className="text-sm text-muted-foreground mb-2">{product.description}</p>
+                          </div>
+                        </div>
                         <div className="flex items-center gap-4">
                           <span className="font-semibold">₦{product.base_price.toLocaleString()}</span>
                           <Badge variant="outline">{product.category}</Badge>
@@ -653,15 +670,50 @@ const AdminDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  value={editingProduct.image_url}
-                  onChange={(e) => setEditingProduct({
-                    ...editingProduct,
-                    image_url: e.target.value
-                  })}
-                />
+                <Label htmlFor="image">Product Image</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="image-url"
+                    placeholder="Or paste image URL"
+                    value={editingProduct.image_url || ''}
+                    onChange={(e) => setEditingProduct({
+                      ...editingProduct,
+                      image_url: e.target.value
+                    })}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="image-file"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setUploadingProductImage(true);
+                          const imageUrl = await handleImageUpload(file);
+                          if (imageUrl) {
+                            setEditingProduct({
+                              ...editingProduct,
+                              image_url: imageUrl
+                            });
+                          }
+                          setUploadingProductImage(false);
+                        }
+                      }}
+                      disabled={uploadingProductImage}
+                    />
+                    {uploadingProductImage && <span className="text-sm text-muted-foreground">Uploading...</span>}
+                  </div>
+                  {editingProduct.image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={editingProduct.image_url}
+                        alt="Product preview"
+                        className="max-w-full h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch
