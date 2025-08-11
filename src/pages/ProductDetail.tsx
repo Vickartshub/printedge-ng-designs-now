@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Upload, Zap, Clock, Star, Shield } from "lucide-react";
+import { ArrowLeft, Upload, Zap, Clock, Star, Shield, CheckCircle, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -27,6 +28,7 @@ interface ProductConfig {
   needsDesign: boolean;
   deliverySpeed: string;
   uploadedFile?: File;
+  uploadedFileUrl?: string;
 }
 
 const quantityOptions = [
@@ -66,6 +68,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [config, setConfig] = useState<ProductConfig>({
     quantity: 100,
     size: "a4",
@@ -125,11 +128,66 @@ const ProductDetail = () => {
     return basePrice * config.quantity;
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setConfig(prev => ({ ...prev, uploadedFile: file }));
+    if (!file) return;
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("File size must be less than 50MB");
+      return;
     }
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'application/pdf', 'application/postscript'];
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.ai')) {
+      toast.error("Please upload PNG, PDF, or AI files only");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `artwork/${fileName}`;
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('imagedirectory')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('imagedirectory')
+        .getPublicUrl(filePath);
+
+      setConfig(prev => ({ 
+        ...prev, 
+        uploadedFile: file,
+        uploadedFileUrl: publicUrl
+      }));
+
+      toast.success("File uploaded successfully!");
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error("Failed to upload file. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUploadedFile = () => {
+    setConfig(prev => ({ 
+      ...prev, 
+      uploadedFile: undefined,
+      uploadedFileUrl: undefined
+    }));
   };
 
   if (loading) {
@@ -316,25 +374,58 @@ const ProductDetail = () => {
                   {/* File Upload */}
                   <div>
                     <Label className="text-base font-semibold">Upload Artwork</Label>
-                    <div className="mt-2 border-2 border-dashed border-muted-foreground/30 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <Label htmlFor="file-upload" className="cursor-pointer">
-                        <span className="text-sm font-medium">Click to upload</span>
-                        <span className="text-sm text-muted-foreground block">PNG, PDF, AI files (max 50MB)</span>
-                      </Label>
-                      <Input
-                        id="file-upload"
-                        type="file"
-                        accept=".png,.pdf,.ai"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                      {config.uploadedFile && (
-                        <p className="mt-2 text-sm text-primary font-medium">
-                          ✓ {config.uploadedFile.name}
-                        </p>
-                      )}
-                    </div>
+                    {!config.uploadedFile ? (
+                      <div className={`mt-2 border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        uploading 
+                          ? 'border-primary/50 bg-primary/5' 
+                          : 'border-muted-foreground/30 hover:border-primary/50'
+                      }`}>
+                        {uploading ? (
+                          <div className="space-y-3">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                            <p className="text-sm text-primary font-medium">Uploading...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                            <Label htmlFor="file-upload" className="cursor-pointer">
+                              <span className="text-sm font-medium text-primary hover:text-primary/80">Click to upload</span>
+                              <span className="text-sm text-muted-foreground block">PNG, PDF, AI files (max 50MB)</span>
+                            </Label>
+                            <Input
+                              id="file-upload"
+                              type="file"
+                              accept=".png,.pdf,.ai,.eps"
+                              onChange={handleFileUpload}
+                              className="hidden"
+                              disabled={uploading}
+                            />
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2 border border-primary/20 bg-primary/5 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <div>
+                              <p className="text-sm font-medium text-primary">{config.uploadedFile.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(config.uploadedFile.size / 1024 / 1024).toFixed(1)}MB
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={removeUploadedFile}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Design Help */}
