@@ -124,9 +124,6 @@ const EditableBanner = () => {
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Button variant="outline" size="xl">
-                  Upload Design
-                </Button>
               </div>
 
             </div>
@@ -242,9 +239,6 @@ const EditableBanner = () => {
                   </Button>
                 </Link>
               )}
-              <Button variant="outline" size="xl">
-                Upload Design
-              </Button>
             </div>
 
           </div>
