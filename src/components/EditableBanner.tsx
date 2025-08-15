@@ -77,7 +77,7 @@ const EditableBanner = () => {
 
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                  Professional Printing & 
+                  Fast Printing & 
                   <span className="bg-gradient-hero bg-clip-text text-transparent"> Branding</span> in Abuja
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
