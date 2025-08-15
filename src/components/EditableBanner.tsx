@@ -130,27 +130,6 @@ const EditableBanner = () => {
                 </Button>
               </div>
 
-              <div className="bg-card border rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-2">Starting prices in Naira (₦)</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-semibold">Business Cards:</span>
-                    <span className="text-primary"> ₦2,500</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Flyers (A4):</span>
-                    <span className="text-primary"> ₦150</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Car Branding:</span>
-                    <span className="text-primary"> ₦75,000</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold">Wedding Invites:</span>
-                    <span className="text-primary"> ₦450</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="relative animate-slide-up">
@@ -269,27 +248,6 @@ const EditableBanner = () => {
               </Button>
             </div>
 
-            <div className="bg-card border rounded-lg p-4">
-              <p className="text-sm text-muted-foreground mb-2">Starting prices in Naira (₦)</p>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-semibold">Business Cards:</span>
-                  <span className="text-primary"> ₦2,500</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Flyers (A4):</span>
-                  <span className="text-primary"> ₦150</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Car Branding:</span>
-                  <span className="text-primary"> ₦75,000</span>
-                </div>
-                <div>
-                  <span className="font-semibold">Wedding Invites:</span>
-                  <span className="text-primary"> ₦450</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="relative animate-slide-up">
