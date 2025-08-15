@@ -81,8 +81,7 @@ const EditableBanner = () => {
                   <span className="bg-gradient-hero bg-clip-text text-transparent"> Branding</span> in Abuja
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  From business cards to car wraps, we deliver premium printing and branding solutions 
-                  with same-day service across Abuja. Upload your design or let our experts create one for you.
+                  Premium printing and branding solutions with same-day service across Abuja.
                 </p>
               </div>
 
