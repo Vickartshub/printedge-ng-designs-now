@@ -87,7 +87,7 @@ const Footer = () => {
               </Button>
               <div className="bg-primary-foreground/10 rounded-lg p-4">
                 <p className="text-sm font-semibold mb-1">WhatsApp Support</p>
-                <p className="text-sm text-primary-foreground/80">+234 803 123 4567</p>
+                <p className="text-sm text-primary-foreground/80">+234 701 762 1388</p>
               </div>
             </div>
           </div>
