@@ -1,4 +1,5 @@
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const testimonials = [
   {
@@ -58,6 +59,30 @@ const testimonials = [
 ];
 
 const Testimonials = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const testimonialsPerPage = 3;
+  const totalPages = Math.ceil(testimonials.length / testimonialsPerPage);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % totalPages);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + totalPages) % totalPages);
+  };
+
+  // Auto slide every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(nextSlide, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getCurrentTestimonials = () => {
+    const start = currentIndex * testimonialsPerPage;
+    const end = start + testimonialsPerPage;
+    return testimonials.slice(start, end);
+  };
+
   return (
     <section className="py-20 bg-gradient-subtle">
       <div className="container mx-auto px-4">
@@ -71,55 +96,104 @@ const Testimonials = () => {
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div
-              key={testimonial.id}
-              className="bg-card border rounded-2xl p-6 hover:shadow-elegant transition-all duration-300 animate-slide-up"
-              style={{ animationDelay: `${index * 100}ms` }}
+        {/* Testimonials Carousel */}
+        <div className="relative">
+          {/* Navigation Buttons */}
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
+            <button
+              onClick={prevSlide}
+              className="w-10 h-10 rounded-full bg-card border shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center text-muted-foreground hover:text-primary -translate-x-5"
             >
-              {/* Quote Icon */}
-              <div className="mb-4">
-                <Quote className="w-8 h-8 text-primary/20" />
-              </div>
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10">
+            <button
+              onClick={nextSlide}
+              className="w-10 h-10 rounded-full bg-card border shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center text-muted-foreground hover:text-primary translate-x-5"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
 
-              {/* Rating */}
-              <div className="flex items-center mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-4 h-4 text-secondary fill-current"
-                  />
-                ))}
-              </div>
+          {/* Testimonials Container */}
+          <div className="overflow-hidden">
+            <div 
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            >
+              {Array.from({ length: totalPages }).map((_, pageIndex) => (
+                <div key={pageIndex} className="w-full flex-shrink-0">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 px-12">
+                    {testimonials
+                      .slice(pageIndex * testimonialsPerPage, (pageIndex + 1) * testimonialsPerPage)
+                      .map((testimonial, index) => (
+                        <div
+                          key={testimonial.id}
+                          className="bg-card border rounded-2xl p-6 hover:shadow-elegant transition-all duration-300"
+                        >
+                          {/* Quote Icon */}
+                          <div className="mb-4">
+                            <Quote className="w-8 h-8 text-primary/20" />
+                          </div>
 
-              {/* Content */}
-              <p className="text-card-foreground mb-6 leading-relaxed">
-                "{testimonial.content}"
-              </p>
+                          {/* Rating */}
+                          <div className="flex items-center mb-4">
+                            {[...Array(testimonial.rating)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className="w-4 h-4 text-secondary fill-current"
+                              />
+                            ))}
+                          </div>
 
-              {/* Author */}
-              <div className="flex items-center">
-                <img
-                  src={testimonial.image}
-                  alt={testimonial.name}
-                  className="w-12 h-12 rounded-full object-cover mr-4"
-                />
-                <div>
-                  <h4 className="font-semibold text-card-foreground">
-                    {testimonial.name}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">
-                    {testimonial.role}
-                  </p>
-                  <p className="text-xs text-primary font-medium">
-                    {testimonial.location}
-                  </p>
+                          {/* Content */}
+                          <p className="text-card-foreground mb-6 leading-relaxed">
+                            "{testimonial.content}"
+                          </p>
+
+                          {/* Author */}
+                          <div className="flex items-center">
+                            <img
+                              src={testimonial.image}
+                              alt={testimonial.name}
+                              className="w-12 h-12 rounded-full object-cover mr-4"
+                            />
+                            <div>
+                              <h4 className="font-semibold text-card-foreground">
+                                {testimonial.name}
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                {testimonial.role}
+                              </p>
+                              <p className="text-xs text-primary font-medium">
+                                {testimonial.location}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="flex justify-center mt-8 space-x-2">
+            {Array.from({ length: totalPages }).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  currentIndex === index
+                    ? 'bg-primary w-6'
+                    : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Stats */}
