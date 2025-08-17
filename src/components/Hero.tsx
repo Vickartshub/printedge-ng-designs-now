@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Star, Zap, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
+import RequestDesignDialog from "@/components/RequestDesignDialog";
 
 const Hero = () => {
   return (
@@ -74,9 +75,11 @@ const Hero = () => {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Button variant="secondary" size="xl">
-                Request Design
-              </Button>
+              <RequestDesignDialog>
+                <Button variant="secondary" size="xl">
+                  Request Design
+                </Button>
+              </RequestDesignDialog>
             </div>
 
             {/* Price Range */}
