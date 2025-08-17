@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Upload, Zap, Clock, Star, Shield, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { useCart } from "@/hooks/useCart";
 
 interface Product {
   id: string;
@@ -18,17 +19,22 @@ interface Product {
   description: string;
   image_url?: string;
   category?: string;
+  customization_options?: CustomizationOption[];
+}
+
+interface CustomizationOption {
+  type: string;
+  name: string;
+  options: { value: string; label: string; price: number; }[];
 }
 
 interface ProductConfig {
   quantity: number;
-  size: string;
-  material: string;
-  finishing: string;
   needsDesign: boolean;
   deliverySpeed: string;
   uploadedFile?: File;
   uploadedFileUrl?: string;
+  customizations: { [key: string]: string };
 }
 
 const quantityOptions = [
@@ -37,25 +43,6 @@ const quantityOptions = [
   { value: 250, label: "250 pieces" },
   { value: 500, label: "500 pieces" },
   { value: 1000, label: "1000 pieces" },
-];
-
-const sizeOptions = [
-  { value: "a4", label: "A4 (210×297mm)", price: 0 },
-  { value: "a5", label: "A5 (148×210mm)", price: -20 },
-  { value: "a3", label: "A3 (297×420mm)", price: 50 },
-];
-
-const materialOptions = [
-  { value: "standard", label: "Standard Paper (170gsm)", price: 0 },
-  { value: "premium", label: "Premium Paper (250gsm)", price: 30 },
-  { value: "cardstock", label: "Cardstock (350gsm)", price: 60 },
-];
-
-const finishingOptions = [
-  { value: "none", label: "No Finishing", price: 0 },
-  { value: "matte", label: "Matte Lamination", price: 25 },
-  { value: "glossy", label: "Glossy Lamination", price: 25 },
-  { value: "foiled", label: "Gold Foil Accent", price: 100 },
 ];
 
 const deliveryOptions = [
@@ -71,12 +58,11 @@ const ProductDetail = () => {
   const [uploading, setUploading] = useState(false);
   const [config, setConfig] = useState<ProductConfig>({
     quantity: 100,
-    size: "a4",
-    material: "standard",
-    finishing: "none",
     needsDesign: false,
     deliverySpeed: "standard",
+    customizations: {},
   });
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -86,7 +72,26 @@ const ProductDetail = () => {
         .select("*")
         .eq("id", id)
         .single();
-      if (!error) setProduct(data as Product);
+      if (!error) {
+        const productData = data as any;
+        const customizationOptions = Array.isArray(productData.customization_options) 
+          ? productData.customization_options 
+          : [];
+        
+        setProduct({
+          ...productData,
+          customization_options: customizationOptions
+        });
+        
+        // Initialize customization defaults
+        const defaults: { [key: string]: string } = {};
+        customizationOptions.forEach((option: CustomizationOption) => {
+          if (option.options.length > 0) {
+            defaults[option.type] = option.options[0].value;
+          }
+        });
+        setConfig(prev => ({ ...prev, customizations: defaults }));
+      }
       setLoading(false);
     };
     fetchProduct();
@@ -104,28 +109,26 @@ const ProductDetail = () => {
   const calculatePrice = () => {
     if (!product) return 0;
     
-    let basePrice = product.base_price;
+    let total = product.base_price;
     
-    // Size adjustment
-    const sizeOption = sizeOptions.find(s => s.value === config.size);
-    if (sizeOption) basePrice += sizeOption.price;
+    // Add customization modifiers
+    product.customization_options?.forEach(option => {
+      const selectedValue = config.customizations[option.type];
+      const selectedOption = option.options.find(opt => opt.value === selectedValue);
+      if (selectedOption) {
+        total += selectedOption.price;
+      }
+    });
     
-    // Material adjustment
-    const materialOption = materialOptions.find(m => m.value === config.material);
-    if (materialOption) basePrice += materialOption.price;
-    
-    // Finishing adjustment
-    const finishingOption = finishingOptions.find(f => f.value === config.finishing);
-    if (finishingOption) basePrice += finishingOption.price;
-    
-    // Delivery adjustment
-    const deliveryOption = deliveryOptions.find(d => d.value === config.deliverySpeed);
-    if (deliveryOption) basePrice += deliveryOption.price;
+    // Add delivery modifier
+    const deliveryPrice = deliveryOptions.find(opt => opt.value === config.deliverySpeed)?.price || 0;
+    total += deliveryPrice;
     
     // Design service
-    if (config.needsDesign) basePrice += 2000;
+    if (config.needsDesign) total += 2000;
     
-    return basePrice * config.quantity;
+    // Multiply by quantity
+    return total * config.quantity;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,6 +191,30 @@ const ProductDetail = () => {
       uploadedFile: undefined,
       uploadedFileUrl: undefined
     }));
+  };
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    
+    const cartItem = {
+      product_name: product.name,
+      product_description: product.description || '',
+      product_id: product.id,
+      quantity: config.quantity,
+      unit_price: product.base_price,
+      total_price: calculatePrice(),
+      selected_specs: [{
+        ...config.customizations,
+        delivery: config.deliverySpeed,
+        needsDesign: config.needsDesign,
+      }],
+      custom_dimensions: config.uploadedFileUrl ? JSON.stringify({
+        uploadedFileUrl: config.uploadedFileUrl,
+      }) : null,
+    };
+
+    await addToCart(cartItem);
+    toast.success("Product added to cart!");
   };
 
   if (loading) {
@@ -293,83 +320,38 @@ const ProductDetail = () => {
                     </Select>
                   </div>
 
-                  {/* Size */}
-                  <div>
-                    <Label className="text-base font-semibold">Size</Label>
-                    <Select value={config.size} onValueChange={(value) => 
-                      setConfig(prev => ({ ...prev, size: value }))
-                    }>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sizeOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="flex justify-between items-center w-full">
-                              <span>{option.label}</span>
-                              {option.price !== 0 && (
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  {option.price > 0 ? '+' : ''}₦{option.price}
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Material */}
-                  <div>
-                    <Label className="text-base font-semibold">Paper Type</Label>
-                    <Select value={config.material} onValueChange={(value) => 
-                      setConfig(prev => ({ ...prev, material: value }))
-                    }>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {materialOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="flex justify-between items-center w-full">
-                              <span>{option.label}</span>
-                              {option.price !== 0 && (
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  +₦{option.price}
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Finishing */}
-                  <div>
-                    <Label className="text-base font-semibold">Finishing Options</Label>
-                    <Select value={config.finishing} onValueChange={(value) => 
-                      setConfig(prev => ({ ...prev, finishing: value }))
-                    }>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {finishingOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            <div className="flex justify-between items-center w-full">
-                              <span>{option.label}</span>
-                              {option.price !== 0 && (
-                                <span className="text-sm text-muted-foreground ml-2">
-                                  +₦{option.price}
-                                </span>
-                              )}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Dynamic Customization Options */}
+                  {product.customization_options?.map((option) => (
+                    <div key={option.type}>
+                      <Label className="text-base font-semibold">{option.name}</Label>
+                      <Select 
+                        value={config.customizations[option.type] || ''} 
+                        onValueChange={(value) => 
+                          setConfig(prev => ({ 
+                            ...prev, 
+                            customizations: { ...prev.customizations, [option.type]: value }
+                          }))
+                        }>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {option.options.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex justify-between items-center w-full">
+                                <span>{opt.label}</span>
+                                {opt.price !== 0 && (
+                                  <span className="text-sm text-muted-foreground ml-2">
+                                    {opt.price > 0 ? '+' : ''}₦{opt.price}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
 
                   {/* File Upload */}
                   <div>
@@ -498,26 +480,20 @@ const ProductDetail = () => {
                       <span>₦{(product.base_price * config.quantity).toLocaleString()}</span>
                     </div>
                     
-                    {sizeOptions.find(s => s.value === config.size)?.price !== 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span>Size adjustment</span>
-                        <span>₦{((sizeOptions.find(s => s.value === config.size)?.price || 0) * config.quantity).toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {materialOptions.find(m => m.value === config.material)?.price !== 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span>Material upgrade</span>
-                        <span>₦{((materialOptions.find(m => m.value === config.material)?.price || 0) * config.quantity).toLocaleString()}</span>
-                      </div>
-                    )}
-                    
-                    {finishingOptions.find(f => f.value === config.finishing)?.price !== 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span>Finishing</span>
-                        <span>₦{((finishingOptions.find(f => f.value === config.finishing)?.price || 0) * config.quantity).toLocaleString()}</span>
-                      </div>
-                    )}
+                    {/* Dynamic customization pricing */}
+                    {product.customization_options?.map((option) => {
+                      const selectedValue = config.customizations[option.type];
+                      const selectedOption = option.options.find(opt => opt.value === selectedValue);
+                      if (selectedOption && selectedOption.price !== 0) {
+                        return (
+                          <div key={option.type} className="flex justify-between text-sm">
+                            <span>{option.name} adjustment</span>
+                            <span>{selectedOption.price > 0 ? '+' : ''}₦{(selectedOption.price * config.quantity).toLocaleString()}</span>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
                     
                     {config.needsDesign && (
                       <div className="flex justify-between text-sm">
@@ -541,7 +517,7 @@ const ProductDetail = () => {
                     </div>
                   </div>
                   
-                  <Button className="w-full" size="lg">
+                  <Button className="w-full" size="lg" onClick={handleAddToCart}>
                     Add to Cart - ₦{calculatePrice().toLocaleString()}
                   </Button>
                   

@@ -22,7 +22,8 @@ import {
   Settings,
   LogOut,
   User,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 
 interface Product {
@@ -33,6 +34,13 @@ interface Product {
   image_url: string;
   category: string;
   is_active: boolean;
+  customization_options?: CustomizationOption[];
+}
+
+interface CustomizationOption {
+  type: string;
+  name: string;
+  options: { value: string; label: string; price: number; }[];
 }
 
 interface Order {
@@ -122,7 +130,10 @@ const AdminDashboard = () => {
         .select('*')
         .order('position', { ascending: true });
 
-      if (productsData) setProducts(productsData);
+      if (productsData) setProducts(productsData.map(p => ({
+        ...p,
+        customization_options: (p.customization_options as any) || []
+      })));
       if (ordersData) {
         setOrders(ordersData);
         
@@ -163,6 +174,7 @@ const AdminDashboard = () => {
           image_url: product.image_url,
           category: product.category,
           is_active: product.is_active,
+          customization_options: JSON.stringify(product.customization_options || []),
         })
         .eq('id', product.id);
 
@@ -189,7 +201,15 @@ const AdminDashboard = () => {
     try {
       const { error } = await supabase
         .from('products')
-        .insert(product);
+        .insert({
+          name: product.name,
+          description: product.description,
+          base_price: product.base_price,
+          image_url: product.image_url,
+          category: product.category,
+          is_active: product.is_active,
+          customization_options: JSON.stringify(product.customization_options || []),
+        });
 
       if (error) throw error;
 
@@ -713,6 +733,115 @@ const AdminDashboard = () => {
                       />
                     </div>
                   )}
+                </div>
+              </div>
+              
+              {/* Customization Options */}
+              <div>
+                <Label>Customization Options</Label>
+                <div className="space-y-4 border rounded-lg p-4">
+                  {editingProduct.customization_options?.map((option, optionIndex) => (
+                    <div key={optionIndex} className="space-y-2 border-b pb-4 last:border-b-0">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Option name (e.g., Size, Color)"
+                          value={option.name}
+                          onChange={(e) => {
+                            const updated = [...(editingProduct.customization_options || [])];
+                            updated[optionIndex] = { ...option, name: e.target.value };
+                            setEditingProduct({ ...editingProduct, customization_options: updated });
+                          }}
+                        />
+                        <Input
+                          placeholder="Type (size, color, etc.)"
+                          value={option.type}
+                          onChange={(e) => {
+                            const updated = [...(editingProduct.customization_options || [])];
+                            updated[optionIndex] = { ...option, type: e.target.value };
+                            setEditingProduct({ ...editingProduct, customization_options: updated });
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = (editingProduct.customization_options || []).filter((_, i) => i !== optionIndex);
+                            setEditingProduct({ ...editingProduct, customization_options: updated });
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {option.options.map((opt, optIndex) => (
+                          <div key={optIndex} className="flex gap-2">
+                            <Input
+                              placeholder="Value"
+                              value={opt.value}
+                              onChange={(e) => {
+                                const updated = [...(editingProduct.customization_options || [])];
+                                updated[optionIndex].options[optIndex] = { ...opt, value: e.target.value };
+                                setEditingProduct({ ...editingProduct, customization_options: updated });
+                              }}
+                            />
+                            <Input
+                              placeholder="Label"
+                              value={opt.label}
+                              onChange={(e) => {
+                                const updated = [...(editingProduct.customization_options || [])];
+                                updated[optionIndex].options[optIndex] = { ...opt, label: e.target.value };
+                                setEditingProduct({ ...editingProduct, customization_options: updated });
+                              }}
+                            />
+                            <Input
+                              type="number"
+                              placeholder="Price"
+                              value={opt.price}
+                              onChange={(e) => {
+                                const updated = [...(editingProduct.customization_options || [])];
+                                updated[optionIndex].options[optIndex] = { ...opt, price: parseFloat(e.target.value) || 0 };
+                                setEditingProduct({ ...editingProduct, customization_options: updated });
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updated = [...(editingProduct.customization_options || [])];
+                                updated[optionIndex].options = updated[optionIndex].options.filter((_, i) => i !== optIndex);
+                                setEditingProduct({ ...editingProduct, customization_options: updated });
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = [...(editingProduct.customization_options || [])];
+                            updated[optionIndex].options.push({ value: '', label: '', price: 0 });
+                            setEditingProduct({ ...editingProduct, customization_options: updated });
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Option
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const updated = [...(editingProduct.customization_options || [])];
+                      updated.push({ type: '', name: '', options: [{ value: '', label: '', price: 0 }] });
+                      setEditingProduct({ ...editingProduct, customization_options: updated });
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Customization Option
+                  </Button>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
