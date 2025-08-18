@@ -109,26 +109,26 @@ const ProductDetail = () => {
   const calculatePrice = () => {
     if (!product) return 0;
     
-    let total = product.base_price;
+    let baseTotal = product.base_price * config.quantity;
+    let oneTimeCharges = 0;
     
-    // Add customization modifiers
+    // Add customization modifiers (one-time charges)
     product.customization_options?.forEach(option => {
       const selectedValue = config.customizations[option.type];
       const selectedOption = option.options.find(opt => opt.value === selectedValue);
       if (selectedOption) {
-        total += selectedOption.price;
+        oneTimeCharges += selectedOption.price;
       }
     });
     
-    // Add delivery modifier
+    // Add delivery modifier (one-time charge)
     const deliveryPrice = deliveryOptions.find(opt => opt.value === config.deliverySpeed)?.price || 0;
-    total += deliveryPrice;
+    oneTimeCharges += deliveryPrice;
     
-    // Design service
-    if (config.needsDesign) total += 2000;
+    // Design service (one-time charge)
+    if (config.needsDesign) oneTimeCharges += 2000;
     
-    // Multiply by quantity
-    return total * config.quantity;
+    return baseTotal + oneTimeCharges;
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -488,7 +488,7 @@ const ProductDetail = () => {
                         return (
                           <div key={option.type} className="flex justify-between text-sm">
                             <span>{option.name} adjustment</span>
-                            <span>{selectedOption.price > 0 ? '+' : ''}₦{(selectedOption.price * config.quantity).toLocaleString()}</span>
+                            <span>{selectedOption.price > 0 ? '+' : ''}₦{selectedOption.price.toLocaleString()}</span>
                           </div>
                         );
                       }
