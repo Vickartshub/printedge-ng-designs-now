@@ -773,7 +773,7 @@ const AdminDashboard = () => {
                         </Button>
                       </div>
                       <div className="space-y-2">
-                        {option.options.map((opt, optIndex) => (
+                        {(option.options || []).map((opt, optIndex) => (
                           <div key={optIndex} className="flex gap-2">
                             <Input
                               placeholder="Value"
