@@ -328,7 +328,7 @@ const Products = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <CardDescription className="mt-1 w-full text-justify leading-relaxed">{product.description}</CardDescription>
+                      <CardDescription className="mt-1">{product.description}</CardDescription>
                       {/* Category hidden as per request */}
                     </div>
                       <div className="text-right ml-4">
