@@ -326,12 +326,12 @@ const Products = () => {
                 </div>
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <div className="flex-1">
+                    <div className="flex-1 mr-2">
                       <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <CardDescription className="mt-1">{product.description}</CardDescription>
+                      <CardDescription className="mt-1 pr-2">{product.description}</CardDescription>
                       {/* Category hidden as per request */}
                     </div>
-                      <div className="text-right ml-4">
+                      <div className="text-right flex-shrink-0">
                         <p className="text-xl font-bold text-primary">
                           <sup className="text-xs font-normal text-muted-foreground mr-1">Starting from </sup>
                           ₦{calculatePrice(product).toLocaleString()}
